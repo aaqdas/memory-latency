@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+#include <x86intrin.h>
 #define DEFAULT_ACCESSES 10000000
 #define WARMUP_ACCESSES 10000000
 #define DEFAULT_STRIDE 512
@@ -192,28 +192,34 @@ static double pointer_scan(char *mem)
 {
 	void **ptr = (void **)&mem[0];
 
-	struct timespec start;
-	if (clock_gettime(CLOCK_MONOTONIC, &start)) {
-		fprintf(stderr, "Error getting time: %s\n", strerror(errno));
-		exit(1);
-	}
+	// struct timespec start;
+	// if (clock_gettime(CLOCK_MONOTONIC, &start)) {
+	// 	fprintf(stderr, "Error getting time: %s\n", strerror(errno));
+	// 	exit(1);
+	// }
+	unsigned long long start;
+	start = __rdtsc();
 
 	for (unsigned long i = 0; i < opt_accesses; i++)
 		ptr = *ptr;
 
-	struct timespec stop;
-	if (clock_gettime(CLOCK_MONOTONIC, &stop)) {
-		fprintf(stderr, "Error getting time: %s\n",
-			strerror(errno));
-		exit(1);
-	}
+	// struct timespec stop;
+	// if (clock_gettime(CLOCK_MONOTONIC, &stop)) {
+	// 	fprintf(stderr, "Error getting time: %s\n",
+	// 		strerror(errno));
+	// 	exit(1);
+	// }
+	unsigned long long stop;
+	stop = __rdtsc();
 
 	use_value(*(long *)ptr);
 
-	unsigned long elapsed = (stop.tv_sec - start.tv_sec)
-				* 1000000000
-				+ stop.tv_nsec - start.tv_nsec;
-
+	// unsigned long elapsed = (stop.tv_sec - start.tv_sec)
+	// 			* 1000000000
+	// 			+ stop.tv_nsec - start.tv_nsec;
+	unsigned long elapsed = stop - start;
+	// printf("Elapsed time: %lu\n", elapsed);
+	// printf("Accesses: %lu\n", opt_accesses);
 	return (double)elapsed / opt_accesses;
 }
 
@@ -224,11 +230,13 @@ static double index_scan(char *mem, unsigned long size)
 	unsigned long repetitions =
 		(opt_accesses - 1) / (nreads * noffsets) + 1;
 
-	struct timespec start;
-	if (clock_gettime(CLOCK_MONOTONIC, &start)) {
-		fprintf(stderr, "Error getting time: %s\n", strerror(errno));
-		exit(1);
-	}
+	// struct timespec start;
+	// if (clock_gettime(CLOCK_MONOTONIC, &start)) {
+	// 	fprintf(stderr, "Error getting time: %s\n", strerror(errno));
+	// 	exit(1);
+	// }
+	unsigned long long start;
+	start = __rdtsc();
 
 	unsigned long i, j;
 	unsigned offset;
@@ -240,18 +248,21 @@ static double index_scan(char *mem, unsigned long size)
 		}
 	}
 
-	struct timespec stop;
-	if (clock_gettime(CLOCK_MONOTONIC, &stop)) {
-		fprintf(stderr, "Error getting time: %s\n",
-			strerror(errno));
-		exit(1);
-	}
+	// struct timespec stop;
+	// if (clock_gettime(CLOCK_MONOTONIC, &stop)) {
+	// 	fprintf(stderr, "Error getting time: %s\n",
+	// 		strerror(errno));
+	// 	exit(1);
+	// }
+	unsigned long long stop;
+	stop = __rdtsc();
 
 	use_value(total);
 
-	unsigned long elapsed = (stop.tv_sec - start.tv_sec)
-				* 1000000000
-				+ stop.tv_nsec - start.tv_nsec;
+	// unsigned long elapsed = (stop.tv_sec - start.tv_sec)
+	// 			* 1000000000
+	// 			+ stop.tv_nsec - start.tv_nsec;
+	unsigned long elapsed = stop - start;
 	unsigned long accesses = repetitions * noffsets * nreads;
 
 	return (double)elapsed / accesses;
